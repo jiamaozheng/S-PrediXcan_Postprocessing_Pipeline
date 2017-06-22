@@ -17,7 +17,7 @@
 git clone https://github.com/jiamaozheng/S-PrediXcan_Post-processing_Pipeline
 ``` 
 
-## Input File Preparation  
+## Input and LocusZoom Directories    
 + [Download LocusZoom (37.5GB)](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone) 
 + Create a new fold - `input` include the following tools/files:  
    * [Prediction models](http://hakyimlab.org/predictdb/)
@@ -25,6 +25,6 @@ git clone https://github.com/jiamaozheng/S-PrediXcan_Post-processing_Pipeline
    * S-PrediXcan outputs  
    * Prepare `gwas_snp.txt` file (tab-delimited format) as described [here](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone). [A concrete example](https://s3.amazonaws.com/imlab-jiamaoz/shared/gwas_snp.txt) 
 
-## Run 
+## Running Pipeline  
 + Open the terminal, and execute:
  ```python MetaXcanPostprocessing.py <your project title>``` 
