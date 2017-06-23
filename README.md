@@ -22,8 +22,10 @@ git clone https://github.com/jiamaozheng/S-PrediXcan_Post-processing_Pipeline
 + Create a new fold - `input` include the following tools/files:  
    * [Prediction models](http://hakyimlab.org/predictdb/)
    * [plink](http://pngu.mgh.harvard.edu/~purcell/plink/)
+   * [GTEx Tissue Abbreviation](https://s3.amazonaws.com/imlab-jiamaoz/shared/gtex_tissue_abbr.txt)
    * S-PrediXcan outputs  
-   * Prepare `gwas_snp.txt` file (tab-delimited format) as described [here](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone). [A concrete example](https://s3.amazonaws.com/imlab-jiamaoz/shared/gwas_snp.txt) 
+   * Prepare `gwas_snp.txt` file (tab-delimited format) as described [here](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone). 
+     [a concrete example](https://s3.amazonaws.com/imlab-jiamaoz/shared/gwas_snp.txt) 
 
 ## Running Pipeline  
 + Open the terminal, and execute:
