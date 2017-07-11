@@ -18,7 +18,7 @@ git clone https://github.com/jiamaozheng/S-PrediXcan_Post-processing_Pipeline
 ``` 
 
 ## Input and LocusZoom Directories    
-+ Create a new fold - `input` which includes the following tools/files: 
++ Create a new folder - `input` which includes the following tools/files: 
    * Outputs either from S-PrediXcan or multiple_tissue pipeline (**required**)
    * [Prediction models](http://hakyimlab.org/predictdb/) (**optional**, only for analyzing S-PrediXcan output) 
    * `gwas_snp.txt` file (tab-delimited format) prepared according to [instructions](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone) and [a concrete example](https://s3.amazonaws.com/imlab-jiamaoz/shared/gwas_snp.txt) (**optional**, only for generating locuszoom plots)
