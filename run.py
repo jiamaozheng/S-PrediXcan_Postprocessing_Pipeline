@@ -4,13 +4,14 @@ from helpers import *
 
 __author__ = "Jiamao Zheng <jiamaoz@yahoo.com>"
 __version__ = "Revision: 0.01"
-__date__ = "Date: 2017-06-28"
+__date__ = "Date: 2017-07-11"
 
 class MetaXcanPostprocess(object):
 
-    def __init__(self, projectName):
+    def __init__(self):
         # source code file path 
         self.currentPath = ''       # /src/ path 
+        self.srcPath = ''
 
         # input, intermediate output, output file paths 
         self.output_annotation_path = '' 
@@ -33,6 +34,8 @@ class MetaXcanPostprocess(object):
         self.tissue_abbr = ''       # tissue names 
         self.gwas_lead_snp = ''     # top gene lists across tissues 
         self.data = ''              # merged metaxcan output (dataframe)
+        self.total_cut_off = ''
+        self.geneOfInterest = ''
 
         # logger 
         self.logger = logging.getLogger()
@@ -44,15 +47,49 @@ class MetaXcanPostprocess(object):
         self.SQL_QUERY_PREFIX = "select e.genename, w.rsid from weights w join extra e on w.gene = e.gene where e.genename = '"
         self.SQL_QUERY_PREFIX_DNG = "select gene, rsid from weights where gene = '"
 
-        # project INFO 
+        # project INFO
+        self.project_name = ''
+        self.project_time = ''
+        self.project_id = ''
+        self.project = ''
+
+        # options
+        self.multiple_tissue = '' 
+        self.locuszoom = ''
+
+
+    def flushPipeline(self):
+        path ='../locuszoom/locuszoom_plots/'
+        os.system("rm -rf %s" % path)
+
+
+    def get_args(self):
+        # setup commond line arguments 
+        parser = argparse.ArgumentParser()
+
+        # required arguments
+        parser.add_argument('-p', '--project_name', required=True, default=None, type=str, help='e.g ovarian_cancer, breast_cancer, or multiple_tissues')
+
+        # not required, and this is optional argument. Please type 'true' if you would like to run multiple tissue pipeline 
+        parser.add_argument('-m', '--multiple_tissue', required=False, default='', type=str, help='true, if you would like to analyze outputs from multiple_tissue pipeline')
+
+ 		# not required, and this is optional argument. Please type 'false' if you don't want to run locuszoom 
+        parser.add_argument('-l', '--locuszoom', required=False, default='', type=str, help='false, if you do not want to run locuszoom')
+
+        # parse the arguments 
+        args = parser.parse_args()
+
+        self.project_name = args.project_name 
+        self.multiple_tissue = args.multiple_tissue 
+        self.locuszoom = args.locuszoom
+
+    def get_parameters(self):
         self.project_time = datetime.now().strftime('%Y-%m-%d') 
         self.project_id = str(myuuid.uuid4())
-        # self.project_id = '5e556ffe-2315-40e8-9d88-11f2e61715cb'
-        self.project = projectName + '_' + self.project_id + '_' + self.project_time
-
+        self.project = self.project_name + '_' + self.project_id + '_' + self.project_time
 
     # Annotations 
-    def annotateMetaxcanOutput(self, projectName):
+    def annotateMetaxcanOutput(self):
         projectName = self.project 
         # set up logger  
         log_path = '../log/' + projectName + '/'
@@ -75,24 +112,29 @@ class MetaXcanPostprocess(object):
 
         # loop through file lists 
         for inputFilename in inputFileList:
-            msg = "ANNOTATING GENES: " + inputFilename 
+            msg = "\n " + datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "ANNOTATING GENES: " + inputFilename 
             self.logger.info(msg)
             print(msg)
             # read data 
-            r("data <- read.csv('%s')" %inputFilename)
+            r("data <- fread('%s')" %inputFilename)
+            data = r('setDF(data)')
             data = r('na.omit(data)')
             robjects.globalenv['dataframe'] = data
 
             # annotation library 
-            grch37 = r('grch37')
-            robjects.globalenv['dataframe'] = grch37
+            grch38 = r('grch38')
+            robjects.globalenv['dataframe'] = grch38
 
             # annotating  
             # if inputFilename == 'xxxxxDGN-WB-unscaled.csv':
             #     annotatedData = r("inner_join(data[, c('gene', 'gene_name', 'zscore', 'effect_size', 'pvalue', 'n_snps_in_model', 'pred_perf_p', 'pred_perf_R2')], grch37[, c('symbol', 'chr', 'start', 'end')], by=c('gene'='symbol'))")
             # else:
-            annotatedData = r("inner_join(data[, c('gene', 'gene_name', 'zscore', 'effect_size', 'pvalue', 'n_snps_in_model', 'pred_perf_pval', 'pred_perf_r2')], grch37[, c('ensgene', 'chr', 'start', 'end')], by =c('gene'='ensgene'))")
+            annotatedData = r("inner_join(data, grch38, by =c('gene'='ensgene'))")
+            annotatedData.drop(['entrez'], axis=1, inplace=True, errors='ignore')
             annotatedData = annotatedData.drop_duplicates()
+            annotatedData = annotatedData[(annotatedData.biotype == 'protein_coding')]
+            # annotatedData.rename(columns={'symbol' : 'gene_name'}, inplace=True)
+            annotatedData['gene_name'] = annotatedData['symbol']
 
             # ouput annotated data 
             annotatedData.to_csv(self.output_annotation_path + inputFilename.split('/')[-1][:-4] + '_annotated.csv', index=None)
@@ -103,7 +145,7 @@ class MetaXcanPostprocess(object):
 
         dfListWithoutSNPs = []
         for outputFileName in self.outputFileListWithoutSNPs:
-            msg = "CONCATING FILE: " + outputFileName 
+            msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "CONCATING FILE: " + outputFileName 
             self.logger.info(msg)
             print(msg)
 
@@ -111,29 +153,35 @@ class MetaXcanPostprocess(object):
             data = r('data <- na.omit(data)')
             robjects.globalenv['dataframe'] = data
 
+            outputFileName = outputFileName.split('/')[-1]
+            if 'TW_' in outputFileName: 
+                outputFileName = outputFileName[3:]
+
             if 'CrossTissue_elasticNet' in outputFileName:
                 outputFileName = outputFileName[:-25]
             elif 'DGN-WB-unscaled' in outputFileName: 
                 outputFileName = outputFileName [:-23]
-            else: 
-                outputFileName = outputFileName[:-25]
-                outputFileName = outputFileName[3:]
+            else:
+                if '_elasticNet' in outputFileName: 
+                    outputFileName = outputFileName[:-25]
+                else: 
+                    outputFileName = outputFileName[:-14]
 
-            tissue = outputFileName.split('/')[-1][3:]
-            data.insert(2, 'tissue', tissue)
+            # tissue = outputFileName.split('/')[-1][3:]
+            data.insert(2, 'tissue', outputFileName)
             dfListWithoutSNPs.append(data)
             
         concatDfWithoutSNPs = pandas.concat(dfListWithoutSNPs, axis = 0)
 
         #output merged data 
-        self.merged_output = self.output_annotation_path + 'merged_output.csv'
+        self.merged_output = self.output_annotation_path + 'merged_annotated.csv'
         concatDfWithoutSNPs.to_csv(self.merged_output, index = None)
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Annotating metaxcan output!"
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Annotating metaxcan output!"
         self.logger.info(msg)
         print(msg)
 
     #  QQ-Plot  
-    def createQQPlot(self, projectName):
+    def createQQPlot(self):
         projectName = self.project 
 
         # create directory that holds qq plot output
@@ -142,7 +190,7 @@ class MetaXcanPostprocess(object):
 
         # loop through file lists 
         for outputFileName in self.outputFileListWithoutSNPs: 
-            msg = "QQ-PLOT(no snps): " + outputFileName 
+            msg = "\n " + datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "QQ-PLOT(no snps): " + outputFileName 
             self.logger.info(msg)
             print(msg)
             # get GWAS output data 
@@ -150,11 +198,25 @@ class MetaXcanPostprocess(object):
             data = r('data <- na.omit(data)')
             robjects.globalenv['dataframe'] = data
 
-            # draw qq-plot and save them to files 
-            r.pdf('%s%s%s%s'%(self.output_qqplot_path, 'qq-plot_', outputFileName.split('/')[-1][:-4],'.pdf'))
-            qqman.qq(data['pvalue'],  main = "")
+            # draw qq-plot and save them to files
+            outputFileName = outputFileName.split('/')[-1]
+            if 'TW_' in outputFileName: 
+                outputFileName = outputFileName[3:]
+
+            if 'CrossTissue_elasticNet' in outputFileName:
+                outputFileName = outputFileName[:-25]
+            elif 'DGN-WB-unscaled' in outputFileName: 
+                outputFileName = outputFileName [:-23]
+            else:
+                if '_elasticNet' in outputFileName: 
+                    outputFileName = outputFileName[:-25]
+                else: 
+                    outputFileName = outputFileName[:-14] 
+
+            r.pdf('%s%s%s%s'%(self.output_qqplot_path, 'QQ-plot_', outputFileName,'.pdf'))
+            qqman.qq(data['pvalue'],  main = outputFileName)
             r['dev.off']()
-        msg = "QQ-PLOT(no snps): " + "merged_output"
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "QQ-PLOT(no snps): " + "all_tissues"
         self.logger.info(msg)
         print(msg)
 
@@ -164,16 +226,16 @@ class MetaXcanPostprocess(object):
         robjects.globalenv['dataframe'] = data
 
         # draw qq-plot and save them to files 
-        r.pdf('%s%s%s%s'%(self.output_qqplot_path,'qq-plot_', 'merged_output', '.pdf'))
-        qqman.qq(data['pvalue'],  main = "QQ plot")
+        r.pdf('%s%s%s%s'%(self.output_qqplot_path,'QQ-plot_', 'all_tissues', '.pdf'))
+        qqman.qq(data['pvalue'],  main = "All Tissues")
         r['dev.off']()
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for QQ Plot!"
+        msg =  "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for QQ Plot!"
         self.logger.info(msg)
         print(msg)
     
     #  Manhattan-Plot 
-    def createManhattanPlot(self, projectName):
+    def createManhattanPlot(self):
         projectName = self.project 
 
         # create directory that holds manhattan plot output
@@ -182,7 +244,7 @@ class MetaXcanPostprocess(object):
 
         # loop through file lists 
         for outputFileName in self.outputFileListWithoutSNPs: 
-            msg = "MANHATTAN-PLOT(no snps): " + outputFileName
+            msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "MANHATTAN-PLOT(no snps): " + outputFileName
             self.logger.info(msg)
             print(msg)
             # read data 
@@ -191,9 +253,24 @@ class MetaXcanPostprocess(object):
             data = r('data <- na.omit(data)')
             robjects.globalenv['dataframe'] = data
 
+            outputFileName = outputFileName.split('/')[-1]
+            if 'TW_' in outputFileName: 
+                outputFileName = outputFileName[3:]
+
+            if 'CrossTissue_elasticNet' in outputFileName:
+                outputFileName = outputFileName[:-25]
+            elif 'DGN-WB-unscaled' in outputFileName: 
+                outputFileName = outputFileName [:-23]
+            else:
+                if '_elasticNet' in outputFileName: 
+                    outputFileName = outputFileName[:-25]
+                else: 
+                    outputFileName = outputFileName[:-14] 
+
             # draw manhattan and save them to files 
-            r.pdf('%s%s%s%s'%(self.manhattanplot_output_path, 'manhattan-Plot_', outputFileName.split('/')[-1][:-4], '.pdf'))
-            qqman.manhattan(data, chr = 'chr', bp='start', p='pvalue', snp='gene_name', main = 'Manhattan plot')
+            # suggestiveline = -log10(1e-05), genomewideline = -log10(5e-08),
+            r.pdf('%s%s%s%s'%(self.manhattanplot_output_path, 'Manhattan-plot_', outputFileName, '.pdf'))
+            qqman.manhattan(data, chr = 'chr', bp='start', p='pvalue', snp='gene_name', cex = 0.5, suggestiveline = 'FALSE', genomewideline = 'FALSE', main = outputFileName)
             r['dev.off']()
 
         # read data 
@@ -202,17 +279,26 @@ class MetaXcanPostprocess(object):
         data = r('data <- na.omit(data)')
         robjects.globalenv['dataframe'] = data
 
+        r("snpOfInterest <- read.csv('%s')" % self.sorted_top_genes_all_tissues_path)
+        self.geneOfInterest = r('snpOfInterest <- as.vector(snpOfInterest$gene_name)')
+        robjects.globalenv['vector'] = self.geneOfInterest
+
+        # print(self.geneOfInterest)
+
         # draw manhattan and save them to files 
-        r.pdf('%s%s%s%s'%(self.manhattanplot_output_path, 'manhattan-plot_', 'merged_output', '.pdf'))
-        qqman.manhattan(data, chr = 'chr', bp='start', p='pvalue', snp='gene_name', main = 'Manhattan plot')
+        r.pdf('%s%s%s%s'%(self.manhattanplot_output_path, 'manhattan-plot_', 'all_tissues', '.pdf'))
+        # snpOfInterest = self.top_gene_list_dataframe[['gene_name']]
+        # print(snpOfInterest)
+        # highlight = self.geneOfInterest,
+        qqman.manhattan(data, chr = 'chr', bp='start', p='pvalue', snp='gene_name', cex = 0.5, suggestiveline = 'FALSE', genomewideline = 'FALSE', annotatePval = self.total_cut_off, annotateTop = 'FALSE', main = 'All Tissues')
         r['dev.off']()
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Manhattan Plot!"
+        msg =  "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Manhattan Plot!"
         self.logger.info(msg)
         print(msg)
 
     # Top Gene List without SNPs
-    def getTopGeneList(self, projectName):
+    def getTopGeneList(self):
         projectName = self.project 
 
         # create directory that holds top gene list (no associated snp)
@@ -220,23 +306,31 @@ class MetaXcanPostprocess(object):
         os.system("mkdir " + self.top_genes_output_path)
 
         # loop through files 
-        for filename in self.outputFileListWithoutSNPs:
-            msg = "TOP GENE LIST: " + filename
+        for outputFileName in self.outputFileListWithoutSNPs:
+            msg = "\n " + datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "TOP GENE LIST: " + outputFileName
             self.logger.info(msg)
             print(msg)
 
-            df = pandas.read_csv(filename) 
-            if 'CrossTissue_elasticNet' in filename:
-                tissue_name = filename[:-25]
-            elif 'DGN-WB-unscaled' in filename: 
-                tissue_name = filename [:-23]
-            else: 
-                tissue_name = filename[:-25]
-                tissue_name = tissue_name[3:]
-            df.insert(2, 'tissue', tissue_name.split('/')[-1])
+            df = pandas.read_csv(outputFileName) 
+
+            outputFileName = outputFileName.split('/')[-1]
+            if 'TW_' in outputFileName: 
+                outputFileName = outputFileName[3:]
+
+            if 'CrossTissue_elasticNet' in outputFileName:
+                outputFileName = outputFileName[:-25]
+            elif 'DGN-WB-unscaled' in outputFileName: 
+                outputFileName = outputFileName [:-23]
+            else:
+                if '_elasticNet' in outputFileName: 
+                    outputFileName = outputFileName[:-25]
+                else: 
+                    outputFileName = outputFileName[:-14] 
+
+            df.insert(2, 'tissue', outputFileName)
 
             # sort data by defined column 
-            df.sort_values(['pvalue', 'n_snps_in_model'], ascending=[1, 0], inplace=True)
+            df.sort_values(['pvalue'], ascending=[1], inplace=True)
             total_rows = df.shape[0] # number of row count shape[1] is number of col count 
 
             # total_rows_in_total += total_rows 
@@ -246,42 +340,42 @@ class MetaXcanPostprocess(object):
             top_gene_list = df[df['pvalue'] < cut_off]
             # top_gene_list = top_gene_list[top_gene_list['pred_perf_R2'] > 0.01]
             # top_gene_list.drop('gene', axis=1, inplace=True)
-            msg = 'CALCULATING TISSUE-WIDE P-VALUE: ' + str(cut_off)
+            msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + 'CALCULATING TISSUE-WIDE P-VALUE: ' + str(cut_off)
             self.logger.info(msg)
             print(msg)
 
             #output data 
-            top_gene_list.to_csv(self.top_genes_output_path + "sorted_top_genes_%s"%tissue_name.split('/')[-1] + ".csv", index = None)
+            top_gene_list.to_csv(self.top_genes_output_path + "sorted_top_genes_%s"%outputFileName + ".csv", index = None)
 
             # dfList.append(top_gene_list)
 
         df = pandas.read_csv(self.merged_output) 
         total_rows_in_total = df.shape[0] 
-        msg = 'total_row_in_total: ' + str(total_rows_in_total)
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + 'total_row_in_total: ' + str(total_rows_in_total)
         self.logger.info(msg)
         print(msg)
 
-        total_cut_off = 0.05/total_rows_in_total 
-        msg = 'CALCULATING GENOME-WIDE P-VALUE: ' + str(total_cut_off)
+        self.total_cut_off = 0.05/total_rows_in_total 
+        msg =  "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + 'CALCULATING GENOME-WIDE P-VALUE: ' + str(self.total_cut_off)
         self.logger.info(msg)
         print(msg)
 
-        df = df[df['pvalue'] < total_cut_off]
+        df = df[df['pvalue'] < self.total_cut_off]
 
         # sort data by defined column 
-        df.sort_values(['pvalue', 'n_snps_in_model'], ascending=[1, 0], inplace=True)
+        df.sort_values(['pvalue'], ascending=[1], inplace=True)
 
         #output data 
         self.sorted_top_genes_all_tissues_path = self.top_genes_output_path+ 'sorted_top_genes_all_tissues.csv' 
         df.to_csv(self.sorted_top_genes_all_tissues_path, index = None)
         self.top_gene_list_dataframe = df
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Top Gene List!"
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Top Gene List!"
         self.logger.info(msg)
         print(msg)
 
     #  Top Gene List with SNPs 
-    def getTopGeneListWithSNPs(self, projectName):
+    def getTopGeneListWithSNPs(self):
         projectName = self.project 
 
         # create directory that holds top gene list (no associated snp)
@@ -341,7 +435,7 @@ class MetaXcanPostprocess(object):
                     query_output['end'] = end_lists[k]
                     query_output_list.append(query_output) 
 
-                    msg = 'FETCH SNPs for GENE %s ' % gene_lists[k] +  'FROM DATABASE: %s' % database_names[i]
+                    msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + 'FETCH SNPs for GENE %s ' % gene_lists[k] +  'FROM DATABASE: %s' % database_names[i]
                     self.logger.info(msg)
                     print(msg)
 
@@ -358,12 +452,12 @@ class MetaXcanPostprocess(object):
         # Output merged data 
         query_output_of.to_csv(self.top_genes_snps_output_path + "top_genes_snps.csv", index=None)
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Top Gene List with SNPs!"
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Top Gene List with SNPs!"
         self.logger.info(msg)
         print(msg)
 
     #  Bubble Plot 
-    def createBubblePlot(self, projectName):
+    def createBubblePlot(self):
         projectName = self.project 
 
         # create directory that holds top gene list (no associated snp)
@@ -371,21 +465,25 @@ class MetaXcanPostprocess(object):
         os.system("mkdir " + self.bubble_plot_output_path)
 
         # current path 
-        self.currentPath = os.getcwd()
-        os.chdir(self.currentPath[:-4] + '/input/' + projectName +'/')
+        self.srcPath = os.getcwd()
+        self.currentPath = os.getcwd()[:-((len(os.getcwd().split('/')[-1])) + 1)]
+        # print(os.getcwd().split('/')[-1])
+        # print(self.currentPath)
+        # print(self.currentPath + '/input/' + projectName +'/')
+        os.chdir(self.currentPath + '/input/' + projectName +'/')
 
         # get tissue abbr name 
-        self.tissue_abbr = r("""
+        # self.tissue_abbr = r("""
 
-        tissue_abbr <- read.delim('gtex_tissue_abbr.txt', sep='\t') %>% 
-        select(tissue_site_detail_abbr,tissue_site_detail_id)
-        colnames(tissue_abbr)[colnames(tissue_abbr) == 'tissue_site_detail_id'] = "tissue"
+        # tissue_abbr <- read.delim('gtex_tissue_abbr.txt', sep='\t') %>% 
+        # select(tissue_site_detail_abbr,tissue_site_detail_id)
+        # colnames(tissue_abbr)[colnames(tissue_abbr) == 'tissue_site_detail_id'] = "tissue"
 
-        """) 
-        robjects.globalenv['dataframe'] = self.tissue_abbr
+        # """) 
+        # robjects.globalenv['dataframe'] = self.tissue_abbr
 
         # get gene lists 
-        os.chdir(self.currentPath[:-4] + '/output/' + projectName + '/top_genes/')
+        os.chdir(self.currentPath + '/output/' + projectName + '/top_genes/')
         self.gwas_lead_snp = r("""
               gwas_lead_snp <- read.csv('sorted_top_genes_all_tissues.csv') %>% 
               select(gene_name, chr, start) %>%
@@ -396,11 +494,11 @@ class MetaXcanPostprocess(object):
         robjects.globalenv['dataframe'] = self.gwas_lead_snp
 
         # get merged data 
-        os.chdir(self.currentPath[:-4] + '/output/' + projectName + '/annotated_output_files/')
-        self.data = r("data <- read.csv('merged_output.csv')")
+        os.chdir(self.currentPath + '/output/' + projectName + '/annotated_output_files/')
+        self.data = r("data <- read.csv('merged_annotated.csv')")
         robjects.globalenv['dataframe'] = self.data 
 
-        os.chdir(self.currentPath[:-4] + '/output/' + projectName + '/bubble_plot/')
+        os.chdir(self.currentPath + '/output/' + projectName + '/bubble_plot/')
 
         # for loop through each snps site +/- 1000000 bp  
         r("""
@@ -423,11 +521,11 @@ class MetaXcanPostprocess(object):
                 subData$gene_name <- factor(subData$gene_name, levels=subData$gene_name)
                 # subData$tissue <- factor(subData$tissue, levels=subData$tissue)
 
-                subData <- subData %>% 
-                inner_join(tissue_abbr, by = "tissue")
+                # subData <- subData %>% 
+                # inner_join(tissue_abbr, by = "tissue")
            
                 # draw plot 
-                p <- ggplot(subData, aes(x=subData$gene_name, y=subData$tissue_site_detail_abbr, size=abs(subData$zscore)))
+                p <- ggplot(subData, aes(x=subData$gene_name, y=subData$tissue, size=abs(subData$zscore)))
                 p + 
                 geom_point(aes(colour=z_score)) + 
                 scale_color_manual(values=c('blue', 'brown')) +
@@ -449,20 +547,38 @@ class MetaXcanPostprocess(object):
                 ggsave(paste(snpsNames[i], '_bubble_plot', '.pdf', sep=''), width=12, height=12)
             } 
         """)
-        os.chdir(self.currentPath)
+        os.chdir(self.srcPath)
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Bubble Plots!"
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Bubble Plots!"
         self.logger.info(msg)
         print(msg)
 
     #  Region Plot 
-    def createRegionPlot(self, projectName):
+    def createRegionPlot(self):
         projectName = self.project 
 
+        # current path 
+        self.srcPath = os.getcwd()
+        self.currentPath = os.getcwd()[:-((len(os.getcwd().split('/')[-1])) + 1)]
+
         # create directory that holds top gene list (no associated snp)
-        self.region_plot_output_path = '../output/' + projectName  + '/region_plot/'
+        self.region_plot_output_path = self.currentPath + '/output/' + projectName  + '/region_plot/'
         os.system("mkdir " + self.region_plot_output_path)
 
+        os.chdir(self.currentPath + '/output/' + projectName + '/top_genes/')
+        self.gwas_lead_snp = r("""
+              gwas_lead_snp <- read.csv('sorted_top_genes_all_tissues.csv') %>% 
+              select(gene_name, chr, start) %>%
+              distinct()
+            colnames(gwas_lead_snp) = c('snpsNames', 'chrosome', 'startSites')
+
+            """)
+        robjects.globalenv['dataframe'] = self.gwas_lead_snp
+
+        # get merged data 
+        os.chdir(self.currentPath + '/output/' + projectName + '/annotated_output_files/')
+        self.data = r("data <- read.csv('merged_annotated.csv')")
+        robjects.globalenv['dataframe'] = self.data 
         os.chdir(self.region_plot_output_path)
 
         r("""
@@ -488,15 +604,17 @@ class MetaXcanPostprocess(object):
                 & subData$logp <= 5.30103, 'Less Sig','Not Sig')))) 
             subData$gene_name <- factor(subData$gene_name, levels=subData$gene_name)
 
+            x_title <- 'Gene'
+            y_title <- expression(bold('-log'[10]*'(pvalue)'))
+
             p <- ggplot(subData, aes(x=gene_name, y=logp))
             p + geom_point(aes(colour = sig)) + 
             scale_color_manual(guide=FALSE, values=c('black', 'black', 'black', 'black')) +
-                # ggtitle(paste("locus: ", snpsNames[i], '(chromosome', chrosome[i], ')')) + 
-            labs(x='Gene', y='-log10(p-value)') +
+            labs(x=x_title, y=y_title) +
             ggtitle(snpsNames[i])+
             geom_hline(yintercept = 5.30103, linetype='dashed', color='black') +
-            geom_hline(yintercept = -log10(0.05/nrow(data)), color='black') +
-            geom_hline(yintercept = -log10(0.05/nrow(subData)), linetype='dashed', color='black') +
+            geom_hline(yintercept = -log10(0.05/nrow(data)), linetype='solid', color='black') +
+            geom_hline(yintercept = -log10(0.05/nrow(subData)), linetype='dotdash', color='black') +
             theme(axis.text.x = element_text(size=16, face='bold', angle = 90, hjust = 1)) +
             theme(axis.text.y = element_text(size=16, face='bold')) + 
             theme(plot.title = element_text(size=18, face='bold')) +
@@ -506,26 +624,26 @@ class MetaXcanPostprocess(object):
             theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
             # output plot 
-            ggsave(paste(snpsNames[i], '_region_plot', '.pdf',sep=''), width=12, height=12)
+            ggsave(paste(snpsNames[i], '_region_plot', '.pdf',sep=''), width=8, height=8)
             } 
         """) 
 
-        os.chdir(self.currentPath)
+        os.chdir(self.srcPath)
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Region Plots!"
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Region Plots!"
         self.logger.info(msg)
         print(msg)
 
     #  locuszoom Plot 
-    def createLocuszoomPlot(self, projectName):
+    def createLocuszoomPlot(self):
         projectName = self.project 
 
         # create a folder to hold locuszoom results 
-        locuszoom_plot_path = '../locuszoom/locuszoom_plots/'
+        locuszoom_plot_path =self.currentPath + '/locuszoom/locuszoom_plots/'
         os.system('mkdir ' + locuszoom_plot_path)
 
         # get gene lists 
-        os.chdir(self.currentPath[:-4] + '/output/' + projectName + '/top_genes/')
+        os.chdir(self.currentPath + '/output/' + projectName + '/top_genes/')
         self.gwas_lead_snp = r("""
               gwas_lead_snp <- read.csv('sorted_top_genes_all_tissues.csv')  %>% 
               select(gene_name, chr, start, end) %>%
@@ -536,13 +654,13 @@ class MetaXcanPostprocess(object):
 
             """)
         robjects.globalenv['dataframe'] = self.gwas_lead_snp
-        os.chdir(self.currentPath)
+        os.chdir(self.srcPath)
 
 
         # source files from input path 
         # copy the files including plink, run_locuszoom.py and two other .txt from input path into locuszoom program 
-        destination = self.currentPath[:-4] + '/locuszoom/locuszoom_plots/'     # locuszoom plot destination path 
-        plink_destination = self.currentPath[:-4] + '/locuszoom'
+        destination = self.currentPath + '/locuszoom/locuszoom_plots/'     # locuszoom plot destination path 
+        plink_destination = self.currentPath + '/locuszoom'
 
 
         source = os.listdir(self.top_genes_output_path)
@@ -550,7 +668,7 @@ class MetaXcanPostprocess(object):
         for file in source: 
             if file.endswith(".txt"):
                 shutil.copy(self.top_genes_output_path + file, destination)
-                msg = "COPYING: the file '%s' into the folder '%s'" % (file, destination) 
+                msg =  "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "COPYING: the file '%s' into the folder '%s'" % (file, destination) 
                 self.logger.info(msg)
                 print(msg)
         os.system('rm ' + self.top_genes_output_path + 'batch_locuszoom.txt')
@@ -562,7 +680,7 @@ class MetaXcanPostprocess(object):
         plink_file = self.input_path + '/plink'
         shutil.copy(plink_file, plink_destination)
 
-        msg = "COPYING: the file '%s' into the folder '%s'" % (plink_file, plink_destination)
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "COPYING: the file '%s' into the folder '%s'" % (plink_file, plink_destination)
         self.logger.info(msg)
         print(msg)
 
@@ -570,32 +688,32 @@ class MetaXcanPostprocess(object):
             file = file.strip()
             if file.endswith(".txt"):
                 shutil.copy(self.input_path + '/' + file, destination)
-                msg = "COPYING: the file '%s' into the folder '%s'" % (file, destination)
+                msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "COPYING: the file '%s' into the folder '%s'" % (file, destination)
                 self.logger.info(msg) 
                 print(msg)
 
         locuszoom_scrip_cmd = 'run_locuszoom.py'
         shutil.copy(locuszoom_scrip_cmd, destination)
-        msg = "COPYING: the file '%s' into the folder '%s'" % (locuszoom_scrip_cmd, destination)  
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "COPYING: the file '%s' into the folder '%s'" % (locuszoom_scrip_cmd, destination)  
         self.logger.info(msg)
         print(msg)
 
         # run locuszoom program 
         os.chdir(locuszoom_plot_path) 
         os.system('./run_locuszoom.py')
-        msg = 'RUNNING: run_locuszoom.py...'
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + 'RUNNING: run_locuszoom.py...'
         self.logger.info(msg)
         print(msg)
         os.chdir(self.currentPath)
 
         # setup locuszoom plot output file path and move all files to this new output folder 
-        locuszoom_plot_files_path = '../output/' + projectName  + '/locuszoom_plot/'
+        locuszoom_plot_files_path = self.currentPath + '/output/' + projectName  + '/locuszoom_plot/'
         os.system("mkdir " + locuszoom_plot_files_path)
         
         src = destination
         dst = locuszoom_plot_files_path
         os.system('mv %s %s' % (src, dst))
-        msg = "MOVING: all files from the folder ' %s ' into the folder ' %s'" % (src, dst)
+        msg = "\n " + datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "MOVING: all files from the folder ' %s ' into the folder ' %s'" % (src, dst)
         self.logger.info(msg)
         print(msg)
 
@@ -612,55 +730,56 @@ class MetaXcanPostprocess(object):
         path = locuszoom_plot_files_path + 'locuszoom_plots/'
         os.system("rm -rf %s" % path)
 
-        msg = "MOVING: all files from the folder '%s' into the folder '%s'" % (src, locuszoom_plot_files_path)
+        msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "MOVING: all files from the folder '%s' into the folder '%s'" % (src, locuszoom_plot_files_path)
         self.logger.info(msg)
         print(msg)
 
-        msg = datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Locuszoom Plots!"
+        msg =  "\n " + datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "Done for Locuszoom Plots!"
         self.logger.info(msg)
         print(msg)
 
         msg = "\nElapsed Time: " + timeString(time.time() - self.start_time) + "\n" # calculate how long the program is running
         self.logger.info(msg)
-        print(msg)
+        print(msg)        
         
 # --------------------------------------
 # main functions 
 # --------------------------------------
 def main():
-    # Instantiate Class ------------------------------------
-    metaXcanPostprocess = MetaXcanPostprocess(sys.argv[1]) 
+    # Instantiate, flush and setup pipeline 
+    metaXcanPostprocess = MetaXcanPostprocess()
+    metaXcanPostprocess.flushPipeline() 
+    metaXcanPostprocess.get_args()
+    metaXcanPostprocess.get_parameters()
 
-    # Part One: Annotation ------------------------------------
-    metaXcanPostprocess.annotateMetaxcanOutput(sys.argv[1])
+    # Part One: Annotation 
+    metaXcanPostprocess.annotateMetaxcanOutput()
 
-    # Part Two: QQ-Plot ------------------------------------
-    metaXcanPostprocess.createQQPlot(sys.argv[1]) 
-
-    # Part Three: Manhattan Plot ------------------------------------
-    metaXcanPostprocess.createManhattanPlot(sys.argv[1])
-
-    # Part Four: Top Gene List Without SNPs ------------------------------------
-    metaXcanPostprocess.getTopGeneList(sys.argv[1])
-
-    # Part Five: Top Gene List With SNPs  ------------------------------------
-    metaXcanPostprocess.getTopGeneListWithSNPs(sys.argv[1])
-
-    #  Part Six:  Bubble Plots   ------------------------------------
-    metaXcanPostprocess.createBubblePlot(sys.argv[1])
+    # Part Two: Top Gene List Without SNPs 
+    metaXcanPostprocess.getTopGeneList()
     
-    # Part Seven: Region Plots  ------------------------------------
-    metaXcanPostprocess.createRegionPlot(sys.argv[1])
+    # Part Three: Top Gene List With SNPs  
+    if len(metaXcanPostprocess.multiple_tissue) == 0: 
+        metaXcanPostprocess.getTopGeneListWithSNPs()
 
-    # Part Eight: Locuszoom Plots ------------------------------------
-    metaXcanPostprocess.createLocuszoomPlot(sys.argv[1])
+    # Part Four: QQ-Plot 
+    metaXcanPostprocess.createQQPlot()
 
+    # Part Five: Manhattan Plot 
+    metaXcanPostprocess.createManhattanPlot()
+
+    # Part Six:  Bubble Plots   
+    if len(metaXcanPostprocess.multiple_tissue) == 0: 
+        metaXcanPostprocess.createBubblePlot()
+    
+    # Part Seven: Region Plots  
+    metaXcanPostprocess.createRegionPlot()
+
+	# Part Eight: Locuszoom Plots 
+    if len(metaXcanPostprocess.locuszoom) == 0: 
+	    metaXcanPostprocess.createLocuszoomPlot()
 
 
 # initialize the script
 if __name__ == '__main__':
     sys.exit(main())
-
-
-
-

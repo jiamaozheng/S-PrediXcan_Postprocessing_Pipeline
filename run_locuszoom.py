@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import os
-import sys
+# locusZoom plot pipeline https://github.com/statgen/locuszoom-standalone
+
+import os, sys 
 
 # Find locuszoom binary. 
 sys.argv[0] = os.path.abspath(sys.argv[0]);

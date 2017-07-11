@@ -16,7 +16,7 @@
 # qqman:          install.packages("qqman") 
 
 # Load modules and libraries 
-import os, sqlite3, time, sys, pandas, glob, shutil, subprocess, logging
+import os, sqlite3, time, sys, pandas, glob, shutil, subprocess, logging, argparse
 from datetime import datetime
 from rpy2.robjects import r
 from rpy2.robjects.packages import importr
@@ -27,6 +27,7 @@ pandas2ri.activate()
 importr('annotables')
 qqman = importr('qqman')
 importr('ggplot2')
+importr('data.table')
 importr('dplyr',  on_conflict="warn")
 
 # get Log
