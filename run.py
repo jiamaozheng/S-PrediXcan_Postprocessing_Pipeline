@@ -71,10 +71,10 @@ class MetaXcanPostprocess(object):
         parser.add_argument('-p', '--project_name', required=True, default=None, type=str, help='e.g ovarian_cancer, breast_cancer, or multiple_tissues')
 
         # not required, and this is optional argument. Please type 'true' if you would like to run multiple tissue pipeline 
-        parser.add_argument('-m', '--multiple_tissue', required=False, default='', type=str, help='true, if you would like to analyze outputs from multiple_tissue pipeline')
+        parser.add_argument('-m', '--multiple_tissue', required=False, default='false', type=str, help='true, if you would like to analyze outputs from multiple_tissue pipeline')
 
  		# not required, and this is optional argument. Please type 'false' if you don't want to run locuszoom 
-        parser.add_argument('-l', '--locuszoom', required=False, default='', type=str, help='false, if you do not want to run locuszoom')
+        parser.add_argument('-l', '--locuszoom', required=False, default='true', type=str, help='false, if you do not want to run locuszoom')
 
         # parse the arguments 
         args = parser.parse_args()
@@ -534,8 +534,8 @@ class MetaXcanPostprocess(object):
                 labs(x='Gene', y='Tissue') + 
                 ggtitle(snpsNames[i])+
                 # scale_x_discrete(breaks = subData$gene_name, labels=Labels) + 
-                theme(axis.text.x = element_text(size=16, face='bold', angle = 90, hjust = 1)) +
-                theme(axis.text.y = element_text(size=16, face='bold')) +
+                theme(axis.text.x = element_text(size=12, face='bold', angle = 90, hjust = 1)) +
+                theme(axis.text.y = element_text(size=12, face='bold')) +
                 theme(plot.title = element_text(size=18, face='bold')) +
                 # theme(axis.title= element_text(size=18, face='bold')) +
                 theme(axis.title.x = element_blank(), axis.title.y = element_blank()) + 
@@ -615,8 +615,8 @@ class MetaXcanPostprocess(object):
             geom_hline(yintercept = 5.30103, linetype='dashed', color='black') +
             geom_hline(yintercept = -log10(0.05/nrow(data)), linetype='solid', color='black') +
             geom_hline(yintercept = -log10(0.05/nrow(subData)), linetype='dotdash', color='black') +
-            theme(axis.text.x = element_text(size=16, face='bold', angle = 90, hjust = 1)) +
-            theme(axis.text.y = element_text(size=16, face='bold')) + 
+            theme(axis.text.x = element_text(size=12, face='bold', angle = 90, hjust = 1)) +
+            theme(axis.text.y = element_text(size=12, face='bold')) + 
             theme(plot.title = element_text(size=18, face='bold')) +
             theme(axis.title.x = element_blank(), axis.title.y=element_text(size=18, face='bold')) + 
             theme(legend.position = "none")+
@@ -624,7 +624,7 @@ class MetaXcanPostprocess(object):
             theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
             # output plot 
-            ggsave(paste(snpsNames[i], '_region_plot', '.pdf',sep=''), width=8, height=8)
+            ggsave(paste(snpsNames[i], '_region_plot', '.pdf',sep=''), width=12, height=12)
             } 
         """) 
 
@@ -759,7 +759,7 @@ def main():
     metaXcanPostprocess.getTopGeneList()
     
     # Part Three: Top Gene List With SNPs  
-    if len(metaXcanPostprocess.multiple_tissue) == 0: 
+    if metaXcanPostprocess.multiple_tissue == 'false': 
         metaXcanPostprocess.getTopGeneListWithSNPs()
 
     # Part Four: QQ-Plot 
@@ -769,14 +769,14 @@ def main():
     metaXcanPostprocess.createManhattanPlot()
 
     # Part Six:  Bubble Plots   
-    if len(metaXcanPostprocess.multiple_tissue) == 0: 
+    if metaXcanPostprocess.multiple_tissue == 'false': 
         metaXcanPostprocess.createBubblePlot()
     
     # Part Seven: Region Plots  
     metaXcanPostprocess.createRegionPlot()
 
 	# Part Eight: Locuszoom Plots 
-    if len(metaXcanPostprocess.locuszoom) == 0: 
+    if metaXcanPostprocess.locuszoom == 'true': 
 	    metaXcanPostprocess.createLocuszoomPlot()
 
 
