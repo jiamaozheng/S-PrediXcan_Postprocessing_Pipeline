@@ -3,8 +3,8 @@
 from helpers import * 
 
 __author__ = "Jiamao Zheng <jiamaoz@yahoo.com>"
-__version__ = "Revision: 0.01"
-__date__ = "Date: 2017-07-11"
+__version__ = "Revision: 0.0.0.1"
+__date__ = "Date: 2017-08-27"
 
 class MetaXcanPostprocess(object):
 
@@ -56,6 +56,9 @@ class MetaXcanPostprocess(object):
         # options
         self.multiple_tissue = '' 
         self.locuszoom = ''
+        self.models_folder = ''
+        self.metaxcan_folder = ''
+        self.tools_folder = ''
 
 
     def flushPipeline(self):
@@ -68,7 +71,16 @@ class MetaXcanPostprocess(object):
         parser = argparse.ArgumentParser()
 
         # required arguments
-        parser.add_argument('-p', '--project_name', required=True, default=None, type=str, help='e.g ovarian_cancer, breast_cancer, or multiple_tissues')
+        parser.add_argument('-p', '--project_name', required=True, default=None, type=str, help='e.g breast_cancer, or multiple_tissues')
+
+        # metaxcan outputs  
+        parser.add_argument('-f', '--metaxcan_folder', required=True, default='../data/metaxcan/', type=str, help='file path to metaxcan outputs')
+
+        # db 
+        parser.add_argument('-d', '--models_folder', required=False, default='../data/models/', type=str, help='file path to prediction models')
+
+        # plink 
+        parser.add_argument('-t', '--tools_folder', required=False, default='../data/tools/', type=str, help='plink software')
 
         # not required, and this is optional argument. Please type 'true' if you would like to run multiple tissue pipeline 
         parser.add_argument('-m', '--multiple_tissue', required=False, default='false', type=str, help='true, if you would like to analyze outputs from multiple_tissue pipeline')
@@ -82,6 +94,10 @@ class MetaXcanPostprocess(object):
         self.project_name = args.project_name 
         self.multiple_tissue = args.multiple_tissue 
         self.locuszoom = args.locuszoom
+        self.models_folder = args.models_folder
+        self.metaxcan_folder = args.metaxcan_folder
+        self.tools_folder = args.tools_folder
+
 
     def get_parameters(self):
         self.project_time = datetime.now().strftime('%Y-%m-%d') 
@@ -101,14 +117,15 @@ class MetaXcanPostprocess(object):
         os.makedirs(self.output_annotation_path)
 
         # self.input_path = '../input/'
-        self.input_path = '../input/' + projectName +'/'
-        os.makedirs(self.input_path)
-        os.system('mv ../input/*.* ' + self.input_path)
-        os.system('mv ../input/plink ' + self.input_path)
+        # self.input_path = '../input/' + projectName +'/'
+        # os.makedirs(self.input_path)
+        # os.system('mv ../input/*.* ' + self.input_path)
+        # os.system('mv ../input/plink ' + self.input_path)
+        self.input_path = self.metaxcan_folder
 
 
         # get input file lists (raw metaxcan output files *.csv) 
-        inputFileList = glob.glob(self.input_path + '/*.csv')
+        inputFileList = glob.glob(self.input_path + '*.csv')
 
         # loop through file lists 
         for inputFilename in inputFileList:
@@ -153,19 +170,26 @@ class MetaXcanPostprocess(object):
             data = r('data <- na.omit(data)')
             robjects.globalenv['dataframe'] = data
 
-            outputFileName = outputFileName.split('/')[-1]
-            if 'TW_' in outputFileName: 
-                outputFileName = outputFileName[3:]
+            # outputFileName = outputFileName.split('/')[-1]
 
-            if 'CrossTissue_elasticNet' in outputFileName:
-                outputFileName = outputFileName[:-25]
-            elif 'DGN-WB-unscaled' in outputFileName: 
-                outputFileName = outputFileName [:-23]
-            else:
-                if '_elasticNet' in outputFileName: 
-                    outputFileName = outputFileName[:-25]
-                else: 
-                    outputFileName = outputFileName[:-14]
+            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
+
+            outputFileName = outputFileName.split('/')[-1]
+            for tissue in tissues: 
+                if tissue in outputFileName:
+                    outputFileName = tissue 
+            # if 'TW_' in outputFileName: 
+            #     outputFileName = outputFileName[3:]
+
+            # if 'CrossTissue_elasticNet' in outputFileName:
+            #     outputFileName = outputFileName[:-25]
+            # elif 'DGN-WB-unscaled' in outputFileName: 
+            #     outputFileName = outputFileName [:-23]
+            # else:
+            #     if '_elasticNet' in outputFileName: 
+            #         outputFileName = outputFileName[:-25]
+            #     else: 
+            #         outputFileName = outputFileName[:-14]
 
             # tissue = outputFileName.split('/')[-1][3:]
             data.insert(2, 'tissue', outputFileName)
@@ -199,19 +223,24 @@ class MetaXcanPostprocess(object):
             robjects.globalenv['dataframe'] = data
 
             # draw qq-plot and save them to files
-            outputFileName = outputFileName.split('/')[-1]
-            if 'TW_' in outputFileName: 
-                outputFileName = outputFileName[3:]
+            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
 
-            if 'CrossTissue_elasticNet' in outputFileName:
-                outputFileName = outputFileName[:-25]
-            elif 'DGN-WB-unscaled' in outputFileName: 
-                outputFileName = outputFileName [:-23]
-            else:
-                if '_elasticNet' in outputFileName: 
-                    outputFileName = outputFileName[:-25]
-                else: 
-                    outputFileName = outputFileName[:-14] 
+            outputFileName = outputFileName.split('/')[-1]
+            for tissue in tissues: 
+                if tissue in outputFileName:
+                    outputFileName = tissue 
+            # if 'TW_' in outputFileName: 
+            #     outputFileName = outputFileName[3:]
+
+            # if 'CrossTissue_elasticNet' in outputFileName:
+            #     outputFileName = outputFileName[:-25]
+            # elif 'DGN-WB-unscaled' in outputFileName: 
+            #     outputFileName = outputFileName [:-23]
+            # else:
+            #     if '_elasticNet' in outputFileName: 
+            #         outputFileName = outputFileName[:-25]
+            #     else: 
+            #         outputFileName = outputFileName[:-14] 
 
             r.pdf('%s%s%s%s'%(self.output_qqplot_path, 'QQ-plot_', outputFileName,'.pdf'))
             qqman.qq(data['pvalue'],  main = outputFileName)
@@ -254,18 +283,25 @@ class MetaXcanPostprocess(object):
             robjects.globalenv['dataframe'] = data
 
             outputFileName = outputFileName.split('/')[-1]
-            if 'TW_' in outputFileName: 
-                outputFileName = outputFileName[3:]
 
-            if 'CrossTissue_elasticNet' in outputFileName:
-                outputFileName = outputFileName[:-25]
-            elif 'DGN-WB-unscaled' in outputFileName: 
-                outputFileName = outputFileName [:-23]
-            else:
-                if '_elasticNet' in outputFileName: 
-                    outputFileName = outputFileName[:-25]
-                else: 
-                    outputFileName = outputFileName[:-14] 
+            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
+
+            outputFileName = outputFileName.split('/')[-1]
+            for tissue in tissues: 
+                if tissue in outputFileName:
+                    outputFileName = tissue 
+            # if 'TW_' in outputFileName: 
+            #     outputFileName = outputFileName[3:]
+
+            # if 'CrossTissue_elasticNet' in outputFileName:
+            #     outputFileName = outputFileName[:-25]
+            # elif 'DGN-WB-unscaled' in outputFileName: 
+            #     outputFileName = outputFileName [:-23]
+            # else:
+            #     if '_elasticNet' in outputFileName: 
+            #         outputFileName = outputFileName[:-25]
+            #     else: 
+            #         outputFileName = outputFileName[:-14] 
 
             # draw manhattan and save them to files 
             # suggestiveline = -log10(1e-05), genomewideline = -log10(5e-08),
@@ -313,19 +349,24 @@ class MetaXcanPostprocess(object):
 
             df = pandas.read_csv(outputFileName) 
 
-            outputFileName = outputFileName.split('/')[-1]
-            if 'TW_' in outputFileName: 
-                outputFileName = outputFileName[3:]
+            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
 
-            if 'CrossTissue_elasticNet' in outputFileName:
-                outputFileName = outputFileName[:-25]
-            elif 'DGN-WB-unscaled' in outputFileName: 
-                outputFileName = outputFileName [:-23]
-            else:
-                if '_elasticNet' in outputFileName: 
-                    outputFileName = outputFileName[:-25]
-                else: 
-                    outputFileName = outputFileName[:-14] 
+            outputFileName = outputFileName.split('/')[-1]
+            for tissue in tissues: 
+                if tissue in outputFileName:
+                    outputFileName = tissue 
+                # if 'TW_' in outputFileName: 
+                #     outputFileName = outputFileName[3:]
+
+                # if 'CrossTissue_elasticNet' in outputFileName:
+                #     outputFileName = outputFileName[:-25]
+                # elif 'DGN-WB-unscaled' in outputFileName: 
+                #     outputFileName = outputFileName [:-23]
+                # else:
+                #     if '_elasticNet' in outputFileName: 
+                #         outputFileName = outputFileName[:-25]
+                #     else: 
+                #         outputFileName = outputFileName[:-14] 
 
             df.insert(2, 'tissue', outputFileName)
 
@@ -397,7 +438,8 @@ class MetaXcanPostprocess(object):
         end_lists = top_genes['end']
 
         # get db lists 
-        dbFileList = glob.glob(self.input_path + "/*.db")
+        self.input_path = self.models_folder
+        dbFileList = glob.glob(self.input_path + "*.db")
 
         database_names = []
         for dbFilename in dbFileList:
@@ -470,7 +512,7 @@ class MetaXcanPostprocess(object):
         # print(os.getcwd().split('/')[-1])
         # print(self.currentPath)
         # print(self.currentPath + '/input/' + projectName +'/')
-        os.chdir(self.currentPath + '/input/' + projectName +'/')
+        # os.chdir(self.currentPath + '/input/' + projectName +'/')
 
         # get tissue abbr name 
         # self.tissue_abbr = r("""
@@ -649,6 +691,7 @@ class MetaXcanPostprocess(object):
               select(gene_name, chr, start, end) %>%
               distinct() %>% 
               mutate(flank='1.0MB', run = 'yes', m2zargs= "showAnnot=F")
+              # gwas_lead_snp <- gwas_lead_snp[sample(1:nrow(gwas_lead_snp)),]
               colnames(gwas_lead_snp) = c('snp', 'chr', 'start', 'stop', 'flank', 'run', 'm2zargs')
               write.table(gwas_lead_snp, file="batch_locuszoom.txt", sep=" ", quote=FALSE, row.names=F)
 
@@ -675,9 +718,9 @@ class MetaXcanPostprocess(object):
 
 
         # input path 
+        self.input_path = self.tools_folder
         source = os.listdir(self.input_path)
-
-        plink_file = self.input_path + '/plink'
+        plink_file = self.input_path + 'plink'
         shutil.copy(plink_file, plink_destination)
 
         msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "COPYING: the file '%s' into the folder '%s'" % (plink_file, plink_destination)
