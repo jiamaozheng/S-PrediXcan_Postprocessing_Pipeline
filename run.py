@@ -108,7 +108,7 @@ class MetaXcanPostprocess(object):
     def annotateMetaxcanOutput(self):
         projectName = self.project 
         # set up logger  
-        log_path = '../log/' + projectName + '/'
+        log_path = '../output/' + projectName + '/logs/'
         os.makedirs(log_path)
         getLog(self.logger, log_path + projectName + '.log')
 
@@ -172,7 +172,7 @@ class MetaXcanPostprocess(object):
 
             # outputFileName = outputFileName.split('/')[-1]
 
-            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
+            tissues = ['multitissue', 'TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
 
             outputFileName = outputFileName.split('/')[-1]
             for tissue in tissues: 
@@ -223,7 +223,7 @@ class MetaXcanPostprocess(object):
             robjects.globalenv['dataframe'] = data
 
             # draw qq-plot and save them to files
-            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
+            tissues = ['multitissue', 'TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
 
             outputFileName = outputFileName.split('/')[-1]
             for tissue in tissues: 
@@ -271,7 +271,7 @@ class MetaXcanPostprocess(object):
         self.manhattanplot_output_path = '../output/' + projectName  + '/manhattan-plot/'
         os.system("mkdir " + self.manhattanplot_output_path)
 
-        # loop through file lists 
+        # loop through file lists
         for outputFileName in self.outputFileListWithoutSNPs: 
             msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "MANHATTAN-PLOT(no snps): " + outputFileName
             self.logger.info(msg)
@@ -284,7 +284,7 @@ class MetaXcanPostprocess(object):
 
             outputFileName = outputFileName.split('/')[-1]
 
-            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
+            tissues = ['multitissue', 'TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
 
             outputFileName = outputFileName.split('/')[-1]
             for tissue in tissues: 
@@ -349,7 +349,7 @@ class MetaXcanPostprocess(object):
 
             df = pandas.read_csv(outputFileName) 
 
-            tissues = ['TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
+            tissues = ['multitissue', 'TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
 
             outputFileName = outputFileName.split('/')[-1]
             for tissue in tissues: 
