@@ -1,10 +1,10 @@
-# S-PrediXcan Post-processing Pipeline
+# PrediXcan/S-PrediXcan/SMT-PrediXcan Post-processing Pipeline
 
 ## Introduction 
-+ A pipeline is used to postprocess S-PrediXcan pipeline's results 
++ A pipeline is used to postprocess PrediXcan/S-PrediXcan/SMT-PrediXcan pipeline's results 
 
 ## Prerequisites
-+  [Python 2.7+](http://www.python.org/download/)
++  [Python 3.4+](http://www.python.org/download/)
 +  [R 3.0+](http://www.r-project.org/)
 +  [rpy2](http://rpy2.readthedocs.io/en/version_2.7.x/)
 +  [annotables](https://github.com/stephenturner/annotables#how)
