@@ -1,7 +1,7 @@
-# PrediXcan/S-PrediXcan/SMT-PrediXcan Post-processing Pipeline
+# PrediXcan/S-PrediXcan/S-TissueXcan Post-processing Pipeline
 
 ## Introduction 
-+ A pipeline is used to postprocess PrediXcan/S-PrediXcan/SMT-PrediXcan pipeline's results 
++ A pipeline is used to postprocess S-PrediXcan/S-TissueXcan pipeline's results 
 
 ## Prerequisites
 +  [Python 3.4+](http://www.python.org/download/)
@@ -17,43 +17,43 @@
 git clone https://github.com/jiamaozheng/S-PrediXcan_Postprocessing_Pipeline
 ``` 
 
-## Input and LocusZoom Directories    
+## Inputs     
 + Prepare the following tools or files: 
-   * Outputs either from PrediXcan, S-PrediXcan or SMT-PrediXcan pipeline (**required**)
+   * Outputs from S-PrediXcan or S-TissueXcan pipeline (**required**)
    * [Prediction models](http://hakyimlab.org/predictdb/) (**optional**, only for analyzing S-PrediXcan output) 
    * `gwas_snp.txt` file (tab-delimited format) prepared according to [instructions](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone) and [a concrete example](https://s3.amazonaws.com/imlab-jiamaoz/shared/gwas_snp.txt) (**optional**, only for generating locuszoom plots)
    * [plink](http://pngu.mgh.harvard.edu/~purcell/plink/) (**optional**, only for generating locuszoom plots)
 + [Download LocusZoom (37.5GB)](http://genome.sph.umich.edu/wiki/LocusZoom_Standalone)(**optional**, only for generating locuszoom plots)
 
 ## Command Line Parameters 
-  Argument              |  Abbre  | Required | Default       | Description  
-  ----------------------| ------- | -------- | --------      | ------------------------
-  --project_name	    |  -p     |   Yes    |  None           | project name (e.g ovarian_cancer)
-  --metaxcan_folder   |  -f     |   Yes    |  None           | file path to metaxcan outputs
-  --models_folder     |  -d     |   No     |'../data/models/'| file path to prediction models
-  --tools_folder      |  -t     |   No     |'../data/tools/' | plink or gwas snps file 
-  --multi_tissue      |  -m     |   No     |  'false'        | "true" for multi_tissue
-  --locuszoom         |  -l     |   No     |  'true'         | "false" for not locuszoom
+  Argument              |  Abbre  | Required | Default         | Description  
+  ----------------------| ------- | -------- | --------        | ------------------------
+  --project_name	      |  -p     |   Yes    |  None           | project name (e.g ovarian_cancer)
+  --metaxcan_folder     |  -f     |   Yes    |  None           | file path to metaxcan outputs
+  --models_folder       |  -d     |   Yes    |'../data/models/'| file path to prediction models
+  --tools_folder        |  -t     |   No     |'../data/tools/' | plink or gwas snps file 
+  --multi_tissue        |  -m     |   No     |  'false'        | "true" for multi_tissue
+  --locuszoom           |  -l     |   No     |  'true'         | "false" for not locuszoom
 
-## Running Pipeline  
+## Running  
 **Example 1: To analyze outputs from S-PrediXcan pipeline**
  ```bash 
- python run.py -p ovarian_cancer
+ python run.py -p breast_cancer -f metaxcan_results_folder -d models_folder 
  ``` 
 
 **Example 2: To analyze outputs from S-PrediXcan pipeline without locuzoom plot analysis**
  ```bash 
- python run.py -p ovarian_cancer -l false  
+ python run.py -p breast_cancer -f metaxcan_results_folder -d models_folder -l false  
  ``` 
 
 **Example 3: To analyze outputs from Multi_tissue S-PrediXcan pipeline**
  ```bash 
- python run.py -p ovarian_cancer -m true 
+ python run.py -p breast_cancer -f metaxcan_results_folder -d models_folder -m true 
  ``` 
 
 **Example 4: To analyze outputs from Multi_tissue S-PrediXcan pipeline without locuzoom plot analysis**
  ```bash 
- python run.py -p ovarian_cancer -m true -l false  
+ python run.py -p breast_cancer -f metaxcan_results_folder -d models_folder -m true -l false  
  ``` 
 
 ## Outputs 

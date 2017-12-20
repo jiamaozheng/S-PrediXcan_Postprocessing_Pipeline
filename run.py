@@ -3,8 +3,7 @@
 from helpers import * 
 
 __author__ = "Jiamao Zheng <jiamaoz@yahoo.com>"
-__version__ = "Revision: 0.0.0.1"
-__date__ = "Date: 2017-08-27"
+__date__ = "Date: 2017-12-20"
 
 class MetaXcanPostprocess(object):
 
@@ -77,7 +76,7 @@ class MetaXcanPostprocess(object):
         parser.add_argument('-f', '--metaxcan_folder', required=True, default='../data/metaxcan/', type=str, help='file path to metaxcan outputs')
 
         # db 
-        parser.add_argument('-d', '--models_folder', required=False, default='../data/models/', type=str, help='file path to prediction models')
+        parser.add_argument('-d', '--models_folder', required=True, default='../data/models/', type=str, help='file path to prediction models')
 
         # plink 
         parser.add_argument('-t', '--tools_folder', required=False, default='../data/tools/', type=str, help='plink software')
@@ -115,14 +114,7 @@ class MetaXcanPostprocess(object):
         # create directory that holds output and inputs 
         self.output_annotation_path = '../output/' + projectName  + '/annotated_output_files/' 
         os.makedirs(self.output_annotation_path)
-
-        # self.input_path = '../input/'
-        # self.input_path = '../input/' + projectName +'/'
-        # os.makedirs(self.input_path)
-        # os.system('mv ../input/*.* ' + self.input_path)
-        # os.system('mv ../input/plink ' + self.input_path)
         self.input_path = self.metaxcan_folder
-
 
         # get input file lists (raw metaxcan output files *.csv) 
         inputFileList = glob.glob(self.input_path + '*.csv')
@@ -132,10 +124,17 @@ class MetaXcanPostprocess(object):
             msg = "\n " + datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + "ANNOTATING GENES: " + inputFilename 
             self.logger.info(msg)
             print(msg)
+
             # read data 
-            r("data <- fread('%s')" %inputFilename)
-            data = r('setDF(data)')
-            data = r('na.omit(data)')
+            r("""
+                data <- na.omit(setDF(fread('%s')))
+
+                """ %inputFilename)
+            r("""
+                data$gene <- substr(data$gene, 1, 15)
+
+                """)
+            data = r('data')
             robjects.globalenv['dataframe'] = data
 
             # annotation library 
@@ -150,6 +149,7 @@ class MetaXcanPostprocess(object):
             annotatedData.drop(['entrez'], axis=1, inplace=True, errors='ignore')
             annotatedData = annotatedData.drop_duplicates()
             annotatedData = annotatedData[(annotatedData.biotype == 'protein_coding')]
+            # print(annotatedData)
             # annotatedData.rename(columns={'symbol' : 'gene_name'}, inplace=True)
             annotatedData['gene_name'] = annotatedData['symbol']
 
@@ -170,28 +170,11 @@ class MetaXcanPostprocess(object):
             data = r('data <- na.omit(data)')
             robjects.globalenv['dataframe'] = data
 
-            # outputFileName = outputFileName.split('/')[-1]
-
             tissues = ['multitissue', 'TW_Liver', 'TW_Brain_Cerebellar_Hemisphere', 'TW_Esophagus_Muscularis', 'TW_Skin_Not_Sun_Exposed_Suprapubic', 'TW_Brain_Caudate_basal_ganglia', 'TW_Heart_Atrial_Appendage', 'TW_Artery_Coronary', 'TW_Esophagus_Gastroesophageal_Junction', 'TW_Adipose_Subcutaneous', 'TW_Stomach', 'TW_Artery_Tibial', 'TW_Pancreas', 'TW_Prostate', 'TW_Testis', 'TW_Brain_Cerebellum', 'TW_Vagina', 'TW_Thyroid', 'TW_Colon_Sigmoid', 'TW_Cells_Transformed_fibroblasts', 'TW_Adipose_Visceral_Omentum', 'TW_Brain_Frontal_Cortex_BA9', 'TW_Spleen', 'TW_Whole_Blood', 'TW_Brain_Hippocampus', 'TW_Pituitary', 'TW_Lung', 'TW_Brain_Nucleus_accumbens_basal_ganglia', 'TW_Esophagus_Mucosa', 'TW_Nerve_Tibial', 'TW_Heart_Left_Ventricle', 'TW_Brain_Anterior_cingulate_cortex_BA24', 'TW_Ovary', 'TW_Brain_Cortex', 'TW_Adrenal_Gland', 'TW_Muscle_Skeletal', 'TW_Cells_EBV-transformed_lymphocytes', 'TW_Artery_Aorta', 'TW_Colon_Transverse', 'TW_Breast_Mammary_Tissue', 'TW_Skin_Sun_Exposed_Lower_leg', 'TW_Brain_Putamen_basal_ganglia', 'TW_Small_Intestine_Terminal_Ileum', 'TW_Uterus', 'TW_Brain_Hypothalamus']
-
             outputFileName = outputFileName.split('/')[-1]
             for tissue in tissues: 
                 if tissue in outputFileName:
                     outputFileName = tissue 
-            # if 'TW_' in outputFileName: 
-            #     outputFileName = outputFileName[3:]
-
-            # if 'CrossTissue_elasticNet' in outputFileName:
-            #     outputFileName = outputFileName[:-25]
-            # elif 'DGN-WB-unscaled' in outputFileName: 
-            #     outputFileName = outputFileName [:-23]
-            # else:
-            #     if '_elasticNet' in outputFileName: 
-            #         outputFileName = outputFileName[:-25]
-            #     else: 
-            #         outputFileName = outputFileName[:-14]
-
-            # tissue = outputFileName.split('/')[-1][3:]
             data.insert(2, 'tissue', outputFileName)
             dfListWithoutSNPs.append(data)
             
@@ -229,18 +212,6 @@ class MetaXcanPostprocess(object):
             for tissue in tissues: 
                 if tissue in outputFileName:
                     outputFileName = tissue 
-            # if 'TW_' in outputFileName: 
-            #     outputFileName = outputFileName[3:]
-
-            # if 'CrossTissue_elasticNet' in outputFileName:
-            #     outputFileName = outputFileName[:-25]
-            # elif 'DGN-WB-unscaled' in outputFileName: 
-            #     outputFileName = outputFileName [:-23]
-            # else:
-            #     if '_elasticNet' in outputFileName: 
-            #         outputFileName = outputFileName[:-25]
-            #     else: 
-            #         outputFileName = outputFileName[:-14] 
 
             r.pdf('%s%s%s%s'%(self.output_qqplot_path, 'QQ-plot_', outputFileName,'.pdf'))
             qqman.qq(data['pvalue'],  main = outputFileName)
@@ -290,21 +261,7 @@ class MetaXcanPostprocess(object):
             for tissue in tissues: 
                 if tissue in outputFileName:
                     outputFileName = tissue 
-            # if 'TW_' in outputFileName: 
-            #     outputFileName = outputFileName[3:]
 
-            # if 'CrossTissue_elasticNet' in outputFileName:
-            #     outputFileName = outputFileName[:-25]
-            # elif 'DGN-WB-unscaled' in outputFileName: 
-            #     outputFileName = outputFileName [:-23]
-            # else:
-            #     if '_elasticNet' in outputFileName: 
-            #         outputFileName = outputFileName[:-25]
-            #     else: 
-            #         outputFileName = outputFileName[:-14] 
-
-            # draw manhattan and save them to files 
-            # suggestiveline = -log10(1e-05), genomewideline = -log10(5e-08),
             r.pdf('%s%s%s%s'%(self.manhattanplot_output_path, 'Manhattan-plot_', outputFileName, '.pdf'))
             qqman.manhattan(data, chr = 'chr', bp='start', p='pvalue', snp='gene_name', cex = 0.5, suggestiveline = 'FALSE', genomewideline = 'FALSE', main = outputFileName)
             r['dev.off']()
@@ -319,13 +276,8 @@ class MetaXcanPostprocess(object):
         self.geneOfInterest = r('snpOfInterest <- as.vector(snpOfInterest$gene_name)')
         robjects.globalenv['vector'] = self.geneOfInterest
 
-        # print(self.geneOfInterest)
-
         # draw manhattan and save them to files 
         r.pdf('%s%s%s%s'%(self.manhattanplot_output_path, 'manhattan-plot_', 'all_tissues', '.pdf'))
-        # snpOfInterest = self.top_gene_list_dataframe[['gene_name']]
-        # print(snpOfInterest)
-        # highlight = self.geneOfInterest,
         qqman.manhattan(data, chr = 'chr', bp='start', p='pvalue', snp='gene_name', cex = 0.5, suggestiveline = 'FALSE', genomewideline = 'FALSE', annotatePval = self.total_cut_off, annotateTop = 'FALSE', main = 'All Tissues')
         r['dev.off']()
 
@@ -355,18 +307,6 @@ class MetaXcanPostprocess(object):
             for tissue in tissues: 
                 if tissue in outputFileName:
                     outputFileName = tissue 
-                # if 'TW_' in outputFileName: 
-                #     outputFileName = outputFileName[3:]
-
-                # if 'CrossTissue_elasticNet' in outputFileName:
-                #     outputFileName = outputFileName[:-25]
-                # elif 'DGN-WB-unscaled' in outputFileName: 
-                #     outputFileName = outputFileName [:-23]
-                # else:
-                #     if '_elasticNet' in outputFileName: 
-                #         outputFileName = outputFileName[:-25]
-                #     else: 
-                #         outputFileName = outputFileName[:-14] 
 
             df.insert(2, 'tissue', outputFileName)
 
@@ -379,16 +319,12 @@ class MetaXcanPostprocess(object):
 
             # cut_off_list.append(cut_off)
             top_gene_list = df[df['pvalue'] < cut_off]
-            # top_gene_list = top_gene_list[top_gene_list['pred_perf_R2'] > 0.01]
-            # top_gene_list.drop('gene', axis=1, inplace=True)
             msg = "\n " +  datetime.now().strftime('%Y.%m.%d.%H:%M:%S ') + 'CALCULATING TISSUE-WIDE P-VALUE: ' + str(cut_off)
             self.logger.info(msg)
             print(msg)
 
             #output data 
             top_gene_list.to_csv(self.top_genes_output_path + "sorted_top_genes_%s"%outputFileName + ".csv", index = None)
-
-            # dfList.append(top_gene_list)
 
         df = pandas.read_csv(self.merged_output) 
         total_rows_in_total = df.shape[0] 
@@ -450,7 +386,7 @@ class MetaXcanPostprocess(object):
         for i in range(len(database_names)):
             for k in range(len(tissue_lists)): 
                 if tissue_lists[k] in database_names[i]: 
-                    # print(tissue_lists[k])
+                    print(tissue_lists[k])
                     # Connect databases 
                     conn = sqlite3.connect(database_names[i]) 
 
@@ -486,10 +422,6 @@ class MetaXcanPostprocess(object):
 
         # Merge output data 
         query_output_of = pandas.concat(query_output_list, axis = 0)   
-        # gwas_snp = pandas.read_csv('gwas_snp.txt', sep="\s+")
-        # gwas_snp.rename(columns={'MarkerName':'rsid', 'P-value':'gwas_pvalue'}, inplace=True)
-
-        # query_output_of.merge(gwas_snp, on='rsid', how='inner')
 
         # Output merged data 
         query_output_of.to_csv(self.top_genes_snps_output_path + "top_genes_snps.csv", index=None)
@@ -509,20 +441,6 @@ class MetaXcanPostprocess(object):
         # current path 
         self.srcPath = os.getcwd()
         self.currentPath = os.getcwd()[:-((len(os.getcwd().split('/')[-1])) + 1)]
-        # print(os.getcwd().split('/')[-1])
-        # print(self.currentPath)
-        # print(self.currentPath + '/input/' + projectName +'/')
-        # os.chdir(self.currentPath + '/input/' + projectName +'/')
-
-        # get tissue abbr name 
-        # self.tissue_abbr = r("""
-
-        # tissue_abbr <- read.delim('gtex_tissue_abbr.txt', sep='\t') %>% 
-        # select(tissue_site_detail_abbr,tissue_site_detail_id)
-        # colnames(tissue_abbr)[colnames(tissue_abbr) == 'tissue_site_detail_id'] = "tissue"
-
-        # """) 
-        # robjects.globalenv['dataframe'] = self.tissue_abbr
 
         # get gene lists 
         os.chdir(self.currentPath + '/output/' + projectName + '/top_genes/')
@@ -796,31 +714,55 @@ def main():
     metaXcanPostprocess.get_parameters()
 
     # Part One: Annotation 
-    metaXcanPostprocess.annotateMetaxcanOutput()
+    try:
+        metaXcanPostprocess.annotateMetaxcanOutput()
+    except Exception as e:
+        print(e)
 
-    # Part Two: Top Gene List Without SNPs 
-    metaXcanPostprocess.getTopGeneList()
+    # Part Two: Top Gene List Without SNPs
+    try:
+        metaXcanPostprocess.getTopGeneList()
+    except Exception as e:
+        print(e) 
     
     # Part Three: Top Gene List With SNPs  
     if metaXcanPostprocess.multiple_tissue == 'false': 
-        metaXcanPostprocess.getTopGeneListWithSNPs()
+        try:
+            metaXcanPostprocess.getTopGeneListWithSNPs()
+        except Exception as e:
+            print(e)
 
     # Part Four: QQ-Plot 
-    metaXcanPostprocess.createQQPlot()
+    try:
+        metaXcanPostprocess.createQQPlot()
+    except Exception as e:
+        print(e)
 
     # Part Five: Manhattan Plot 
-    metaXcanPostprocess.createManhattanPlot()
+    try:
+        metaXcanPostprocess.createManhattanPlot()
+    except Exception as e:
+        print(e)
 
     # Part Six:  Bubble Plots   
     if metaXcanPostprocess.multiple_tissue == 'false': 
-        metaXcanPostprocess.createBubblePlot()
+        try:
+            metaXcanPostprocess.createBubblePlot()
+        except Exception as e:
+            print(e)
     
-    # Part Seven: Region Plots  
-    metaXcanPostprocess.createRegionPlot()
+    # Part Seven: Region Plots 
+    try:
+        metaXcanPostprocess.createRegionPlot()
+    except Exception as e:
+        print(e) 
 
 	# Part Eight: Locuszoom Plots 
     if metaXcanPostprocess.locuszoom == 'true': 
-	    metaXcanPostprocess.createLocuszoomPlot()
+        try:
+            metaXcanPostprocess.createLocuszoomPlot()
+        except Exception as e:
+            print(e)
 
 
 # initialize the script
