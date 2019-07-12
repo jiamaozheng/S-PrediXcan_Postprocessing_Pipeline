@@ -1,5 +1,5 @@
 # PrediXcan/S-PrediXcan/S-TissueXcan Post-processing Pipeline
-
+[![Gitter](https://badges.gitter.im/jiamaozheng/community.svg)](https://gitter.im/jiamaozheng/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 ## Introduction 
 + A pipeline is used to postprocess S-PrediXcan/S-TissueXcan pipeline's results 
 
