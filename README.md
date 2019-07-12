@@ -67,3 +67,6 @@ git clone https://github.com/jiamaozheng/S-PrediXcan_Postprocessing_Pipeline
     * region_plot `.pdf`
     * bubble_plot `.pdf`
     * locuszoom_plot `.pdf`
+    
+## Join us on [Gitter](https://gitter.im/jiamaozheng/community)
+
